@@ -49,7 +49,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       logging:
         this.configService.get('app.nodeEnv', { infer: true }) !== 'production',
       // Include relational entity folders and any *.entity files
-      entities: entitiesGlobs,
+      entities: [path.resolve(__dirname, '..', '**', '*.entity.js')],
       migrations: [__dirname + '/../migrations/*{.ts,.js}'],
       extra: {
         connectionLimit: this.configService.get('database.maxConnections', {
