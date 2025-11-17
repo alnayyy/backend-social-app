@@ -1,0 +1,442 @@
+{
+  "info": {
+    "name": "B5 ADAWEB - Backend API (quick tests) - fixed",
+    "_postman_id": "b5-adaweb-posts-api",
+    "description": "Collection untuk menguji endpoint posts, dev login, dan users. Import ke Postman lalu atur variable `baseUrl` jika perlu.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "default"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "postId",
+      "value": "1",
+      "type": "default"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// If a collection token is present, ensure Authorization header is set",
+          "(function(){",
+          "  try {",
+          "    const t = pm.collectionVariables.get('token');",
+          "    if (t && t.length) {",
+          "      // Upsert Authorization header for the outgoing request",
+          "      pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });",
+          "    }",
+          "  } catch (e) { console.log('collection prerequest script error', e); }",
+          "})();"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Dev: Get JWT (POST /dev/login)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"id\": 1 }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dev/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dev",
+            "login"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save returned token to collection variable 'token'",
+              "if (pm.response.code === 200) {",
+              "  try {",
+              "    const json = pm.response.json();",
+              "    if (json.token) {",
+              "      pm.collectionVariables.set('token', json.token);",
+              "      console.log('Saved token to collection variable.');",
+              "      pm.test('token saved', function () { pm.expect(json.token).to.be.a('string'); });",
+              "    } else {",
+              "      pm.test('token present', function () { pm.expect.fail('token missing in response'); });",
+              "    }",
+              "  } catch (e) {",
+              "    pm.test('parse response', function () { pm.expect.fail('could not parse JSON'); });",
+              "  }",
+              "} else {",
+              "  pm.test('status 200', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - GET /posts",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/posts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3 - POST /posts (create)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-username",
+            "value": "demoUser",
+            "disabled": false
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"content\": \"Test post from Postman\", \"media\": [] }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/posts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save created post id to collection variable 'postId' if response contains id",
+              "if (pm.response.code >= 200 && pm.response.code < 300) {",
+              "  try {",
+              "    const json = pm.response.json();",
+              "    if (json && (json.id || json._id)) {",
+              "      const id = json.id || json._id;",
+              "      pm.collectionVariables.set('postId', String(id));",
+              "      console.log('Saved postId =', id);",
+              "      pm.test('saved postId', function () { pm.expect(id).to.exist; });",
+              "    }",
+              "  } catch (e) {",
+              "    // ignore parse errors",
+              "  }",
+              "}",
+              "pm.test('status is 2xx', function () { pm.expect(pm.response.code).to.be.within(200,299); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - PATCH /posts/:id (update)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-username",
+            "value": "demoUser"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"content\": \"Updated via Postman PATCH\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{postId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts",
+            "{{postId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5 - DELETE /posts/:id",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "x-username",
+            "value": "demoUser"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{postId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts",
+            "{{postId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6 - GET /users (admin-only)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7 - Auth: email login (POST /auth/email/login)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"admin@example.com\", \"password\": \"password\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/email/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "email",
+            "login"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save returned JWT token (if any) to collection variable 'token'",
+              "if (pm.response.code === 200) {",
+              "  try {",
+              "    const json = pm.response.json();",
+              "    if (json && json.accessToken) {",
+              "      pm.collectionVariables.set('token', json.accessToken || json.token || '');",
+              "      pm.test('saved token', function () { pm.expect(pm.collectionVariables.get('token')).to.not.be.empty; });",
+              "    } else if (json && json.token) {",
+              "      pm.collectionVariables.set('token', json.token);",
+              "    } else {",
+              "      // Some implementations return { token } or { accessToken }",
+              "    }",
+              "  } catch (e) {}",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8 - GET single post (GET /posts/:id)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{postId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts",
+            "{{postId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9 - POST comment to post (POST /posts/:id/comments)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-username",
+            "value": "demoUser"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"username\": \"demoUser\", \"content\": \"Komentar dari Postman\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{postId}}/comments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts",
+            "{{postId}}",
+            "comments"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10 - GET comments for post (GET /posts/:id/comments)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{postId}}/comments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts",
+            "{{postId}}",
+            "comments"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11 - File upload (POST /files/upload)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/files/upload",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "files",
+            "upload"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

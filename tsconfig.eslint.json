@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "routes/**/*.js",
+    "routes/**/*.ts",
+    "test/**/*.ts",
+    "*.js",
+    "*.mjs",
+    "eslint.config.mjs"
+  ]
+}
